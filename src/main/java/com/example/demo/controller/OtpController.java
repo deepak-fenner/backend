@@ -1,36 +1,42 @@
 package com.example.demo.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.example.demo.config.SecurityConfig;
 import com.example.demo.model.OtpRequest;
 import com.example.demo.service.OtpService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
-@CrossOrigin(origins = "*") 
+@RequestMapping
+@CrossOrigin(origins = "*")
 public class OtpController {
 
+    private final OtpService otpService;
+    private final SecurityConfig securityConfig;
+
     @Autowired
-    private OtpService otpService;
+    public OtpController(OtpService otpService, SecurityConfig securityConfig) {
+        this.otpService = otpService;
+        this.securityConfig = securityConfig;
+    }
 
     @PostMapping("/send-otp")
-    public ResponseEntity<String> sendOtp(@RequestBody OtpRequest request) {
+    public ResponseEntity<Map<String, String>> sendOtp(@RequestBody OtpRequest request) {
         otpService.sendOtp(request.getEmail());
-        return ResponseEntity.ok("OTP sent");
+        System.out.println("✅ OTP sent to: " + request.getEmail());
+        return ResponseEntity.ok(Map.of("message", "OTP sent successfully"));
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<String> verifyOtp(@RequestBody OtpRequest request) {
-        boolean valid = otpService.verifyOtp(request.getEmail(), request.getOtp());
-        return valid
-            ? ResponseEntity.ok("OTP verified")
-            : ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
+    public ResponseEntity<Map<String, String>> verifyOtp(@RequestBody OtpRequest request) {
+        boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtp());
+        if (isValid) {
+            return ResponseEntity.ok(Map.of("message", "OTP verified"));
+        } else {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid OTP"));
+        }
     }
 }
-
